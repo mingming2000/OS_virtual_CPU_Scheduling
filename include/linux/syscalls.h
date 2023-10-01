@@ -1296,4 +1296,8 @@ static inline unsigned int ksys_personality(unsigned int personality)
 	return old;
 }
 
+/*os*/
+asmlinkage int sys_os2023_push(int);
+asmlinkage int sys_os2023_pop(void);
+
 #endif
