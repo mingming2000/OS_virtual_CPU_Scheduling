@@ -31,7 +31,7 @@ SYSCALL_DEFINE1(os2023_push, int, a){
         
         // Print values of the stack.
         printk("Stack Top --------------------\n");
-        for(i = 0; i <= top; ++i){
+        for(i = top; i >= 0; --i){
             printk("%3d\n", arr[i]);
         }
         printk("Stack Bottom -----------------\n");
@@ -72,7 +72,7 @@ SYSCALL_DEFINE0(os2023_pop){
 
         // Print values of the stack.
         printk("Stack Top --------------------\n");
-        for(i = 0; i <= top; ++i){
+        for(i = top; i >= 0; --i){
             printk("%3d\n", arr[i]);
         }
         printk("Stack Bottom -----------------\n");
