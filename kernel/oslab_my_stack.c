@@ -2,11 +2,14 @@
 #include <linux/kernel.h>
 #include <linux/linkage.h>
 
-#define MAX 300
-static int arr[MAX] = {0};
-static int top = -1;
+#define MAX 300                 // size of stack
+static int arr[MAX] = {0};      // Stack dtype: int array, size: 300, initialized by 0 
+static int top = -1;            // Top points recently stored value or vacant stack.
 
 SYSCALL_DEFINE1(os2023_push, int, a){
+    /*
+        System Call Function : os2023_push 
+    */
     int i = 0;
 
     printk("\033[0;33m[System call] os2023_push\033[0m :\n");
@@ -31,7 +34,7 @@ SYSCALL_DEFINE1(os2023_push, int, a){
         
         // Print values of the stack.
         printk("Stack Top --------------------\n");
-        for(i = top; i >= 0; --i){
+        for(i = 0; i <= top; ++i){
             printk("%3d\n", arr[i]);
         }
         printk("Stack Bottom -----------------\n");
@@ -41,6 +44,10 @@ SYSCALL_DEFINE1(os2023_push, int, a){
 }
 
 SYSCALL_DEFINE0(os2023_pop){
+    /*
+        System Call Function : os2023_pop
+    */
+    
     int pop = 0;
     int i = 0;
     int j = 0;
@@ -72,7 +79,7 @@ SYSCALL_DEFINE0(os2023_pop){
 
         // Print values of the stack.
         printk("Stack Top --------------------\n");
-        for(i = top; i >= 0; --i){
+        for(i = 0; i <= top; ++i){
             printk("%3d\n", arr[i]);
         }
         printk("Stack Bottom -----------------\n");

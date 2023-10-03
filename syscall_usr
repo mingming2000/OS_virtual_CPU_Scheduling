@@ -1,5 +1,5 @@
-# define syscall_push 335
-# define syscall_pop 336
+# define syscall_push 335   // push : #335 in the syscall_64.tbl
+# define syscall_pop 336    // pop  : #336 in the syscall_64.tbl
 
 # include <unistd.h>
 # include <stdlib.h>
