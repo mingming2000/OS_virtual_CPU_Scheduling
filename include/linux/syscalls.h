@@ -1299,5 +1299,5 @@ static inline unsigned int ksys_personality(unsigned int personality)
 /*os*/
 asmlinkage int sys_os2023_push(int);
 asmlinkage int sys_os2023_pop(void);
-
+asmlinkage int os2023_ku_cpu1(char*, int);
 #endif
