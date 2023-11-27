@@ -9,6 +9,7 @@
 static pid_t queue[MAX];      // Queue dtype: int array, size: 300, initialized by 0 
 static int head = -1;            // points head of Q
 static int tail = -1;            // points tail of Q
+static int len = 0;
 static int now = IDLE;
 
 typedef struct
@@ -22,6 +23,7 @@ pid_t ready_queue_pop(void);
 int is_process_new(int);
 void ready_queue_push(job_t);
 
+void print_ready_queue(void);       // for debugging
 
 SYSCALL_DEFINE2(os2023_ku_cpu1, char*, name, int, job){
     /*
@@ -34,6 +36,11 @@ SYSCALL_DEFINE2(os2023_ku_cpu1, char*, name, int, job){
     // Case 1: CPU idle
     if (now == IDLE){
         now = new_job.pid;
+
+        // For debugging
+        // printk("now: %d", now);
+        // print_ready_queue();
+
         return 0;       // Accepted
     }
     // Case 2: current process == requested process
@@ -51,6 +58,11 @@ SYSCALL_DEFINE2(os2023_ku_cpu1, char*, name, int, job){
         else{
             printk("\033[33m[WORKING] \033[0m Process: %s\n", name);
         }
+
+        // For debugging
+        // printk("now: %d", now);
+        // print_ready_queue();
+        
         return 0;      // Accepted
     } else{
         // Case 3: current process != requested process
@@ -58,14 +70,20 @@ SYSCALL_DEFINE2(os2023_ku_cpu1, char*, name, int, job){
         if(is_process_new(new_job.pid))
             ready_queue_push(new_job);
             
-            printk("\033[31m[DENIED]  \033[0m Process: %s\n", name);
+        printk("\033[31m[DENIED]  \033[0m Process: %s\n", name);
+
+        // For debugging
+        // printk("now: %d", now);
+        // print_ready_queue();
+
         return 1;   // Rejected
     }
+
 }
 
 int is_ready_queue_empty(){
     // If ready queue is empty
-    if(head == tail)
+    if(len == 0)
         return 1;
     // If ready queue is not empty
     else
@@ -77,7 +95,10 @@ pid_t ready_queue_pop(){
     int out;
     
     out = head;
-    head += 1;
+    if(len != 1)
+        head += 1;
+
+    len--;
     return queue[out];
 }
 
@@ -93,6 +114,20 @@ int is_process_new(int new_process){
 }
 
 void ready_queue_push(job_t new_process){
-    tail += 1;
+    if(len == 0){
+        head++;
+        tail++;
+    }
+    else{
+        tail += 1;
+    }
+    len++;
     queue[tail] = new_process.pid;
 }
+
+// for debugging
+void print_ready_queue(void){
+    int i;
+
+    for(i = head; i <= tail; ++i)   printk("Ready Queue: %d %d", i, queue[i]);
+}       
