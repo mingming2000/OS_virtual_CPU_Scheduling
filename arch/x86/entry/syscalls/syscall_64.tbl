@@ -348,6 +348,7 @@
 335 common  os2023_push     __x64_sys_os2023_push
 336 common  os2023_pop      __x64_sys_os2023_pop
 337 common  os2023_ku_cpu1   __x64_sys_os2023_ku_cpu1
+#338 common  os2023_ku_cpu_sjf   __x64_sys_os2023_ku_cpu_sjf
 
 
 #
