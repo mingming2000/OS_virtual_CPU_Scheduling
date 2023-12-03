@@ -28,7 +28,7 @@ typedef struct
 job_t queue[MAX];               // Queue dtype: job_t, size: MAX, initialized by 0, job: Execution time
 job_t now = {IDLE, 0};                      // Variable to keep track of process recently occupying CPU
 job_t new;
-static job_t sj_process;              // Variable which indicating Shortest Job Process
+// static job_t sj_processss;              // Variable which indicating Shortest Job Process
 
 int is_ready_queue_empty(void);
 pid_t ready_queue_pop_pid(void);
@@ -166,10 +166,7 @@ SYSCALL_DEFINE2(os2023_ku_cpu_srtf, char*, name, int, job){
     job_t new_job = {current->pid, job};
 
     //For debugging
-    print_ready_queue();
-
-    // For debugging
-    printk("\nnow.pid: %d", now.pid);
+    // printk("\n\nnow.pid: %d", now.pid);
     // print_ready_queue();
 
     // Case 1: CPU idle
@@ -181,34 +178,28 @@ SYSCALL_DEFINE2(os2023_ku_cpu_srtf, char*, name, int, job){
     }
 
 
-    // Case 3: current process != requested process
+    // Case 2: current process != requested process
     // If the process is not already in Waiting Q
     if(is_process_new(new_job.pid)){
-        printk("\n [Push] new_job pid: %d job: %d \n", new_job.pid, new_job.job);
-        ready_queue_push_sort(new_job);
-        printk("\n [Push] now pid: %d job: %d \n", now.pid, now.job);
-        ready_queue_push_sort(now);
 
-        printk("\033[33m[Save] \033[0m ready queue:\n");
-        print_ready_queue();
-        printk("****\n");
+        if(new_job.job < now.job){
+            // If job of new process is shorter than job of running process, change process to new one.
 
-        printk("\n [pop] \n");
-        // sj_process = ready_queue_pop();
-        if(sj_process.pid == new_job.pid){
+            ready_queue_push_sort(now);
+            // printk("[Push] now pid: %d job: %d \n", now.pid, now.job);   // For debugging
             printk("\033[33m[WORKING] \033[0m Process: %s\n", name);
-            now = sj_process;
-            return 0; // Accepted
-
+            now = new_job;
+            return 0;           // Accepted
         }
         else{
+            // Push new process 
+            ready_queue_push_sort(new_job);
             printk("\033[31m[DENIED]  \033[0m Process: %s\n", name);
-            now = sj_process;
             return 1;   // Rejected
         }
     }
     else{
-            // Case 2: current process == requested process
+        // Case 3: current process == requested process
         if (now.pid == new_job.pid){
 
             // If the job has finished
@@ -224,10 +215,6 @@ SYSCALL_DEFINE2(os2023_ku_cpu_srtf, char*, name, int, job){
             else{
                 printk("\033[33m[WORKING] \033[0m Process: %s\n", name);
             }
-
-            // For debugging
-            // printk("now.pid: %d", now.pid);
-            // print_ready_queue();
             
             return 0;      // Accepted
         }
@@ -236,9 +223,6 @@ SYSCALL_DEFINE2(os2023_ku_cpu_srtf, char*, name, int, job){
             return 1;   // Rejected
         }
     }
-    // For debugging
-    // printk("now.pid: %d", now.pid);
-    // print_ready_queue();
 }
 
 /*
@@ -366,6 +350,10 @@ pid_t ready_queue_pop_shortest(){
 int is_process_new(pid_t new_process_pid){
     int i = 0;
 
+    if(new_process_pid == now.pid){
+        return 0;
+    }
+    
     for(i = head; i <= tail; i++){
         // printk("%d", queue[i]);          // For debugging
         if(queue[i].pid == new_process_pid)
