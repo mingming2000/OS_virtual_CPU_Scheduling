@@ -9,8 +9,7 @@
 static int head = -1;            // points head of Q
 static int tail = -1;            // points tail of Q
 static int len = 0;
-// static int timer = 0;
-// static char* queue_name[MAX];
+static int timer = 0;
 
 typedef struct
 {
@@ -18,17 +17,9 @@ typedef struct
     int job;
 }job_t;
 
-// typedef struct
-// {
-//     pid_t pid;
-//     char* name;
-// }name_dictionary;
-
-
 job_t queue[MAX];               // Queue dtype: job_t, size: MAX, initialized by 0, job: Execution time
 job_t now = {IDLE, 0};                      // Variable to keep track of process recently occupying CPU
 job_t new;
-// static job_t sj_processss;              // Variable which indicating Shortest Job Process
 
 int is_ready_queue_empty(void);
 pid_t ready_queue_pop_pid(void);
@@ -38,7 +29,8 @@ int is_process_new(pid_t);
 void ready_queue_push(job_t);
 void ready_queue_push_sort(job_t);
 job_t shortest_process(void);
-// char* find_name(pid_t);
+int is_timeout(void);
+void start_timer(void);
 
 void print_ready_queue(void);       // for debugging
 
@@ -203,7 +195,7 @@ SYSCALL_DEFINE2(os2023_ku_cpu_srtf, char*, name, int, job){
         if (now.pid == new_job.pid){
 
             // If the job has finished
-            if (job == 0){
+            if (job == 0){              
                 printk("\033[32m[FINISH]  \033[0m Process: %s\n", name);
 
                 // Check whether the ready Q is empty
@@ -225,61 +217,77 @@ SYSCALL_DEFINE2(os2023_ku_cpu_srtf, char*, name, int, job){
     }
 }
 
-/*
+
 SYSCALL_DEFINE2(os2023_ku_cpu_rr, char*, name, int, job){
     
+    /*
         System Call Function : os2023_ku_rr (RR)
-    
-    
+    */
     
     // Store current PID
     job_t new_job = {current->pid, job};
 
+    //For debugging
+    printk("\n\nnow.pid: %d", now.pid);
+    printk("Timer: %d", timer);
+    print_ready_queue();
+
     // Case 1: CPU idle
-    if (now.pid == IDLE){
-        new_job.job--;
+    if(now.pid == IDLE){
         now = new_job;
-        printk("\033[33m[WORKING] \033[0m Process: %s\n", name);
-
-        // For debugging
-        // printk("now: %d", now);
-        // print_ready_queue();
-
+        start_timer();
+        timer++;
         return 0;       // Accepted
     }
 
-    // Case 2: Enqueue new process
-    if(is_process_new(new_job.pid)){
-        ready_queue_push(new_job);              // Enqueue process to ready_queue
-    }
+    // Case 2: current process == requested process
+    if(now.pid == new_job.pid){
+        /*
+        1) Time slice over
+        2) running process finish
+        3) working
+        */
 
-    // Case 3-2: (Process finish)
-    if(now.job == 0){
-        now = ready_queue_pop();
+        if(is_timeout() || now.job == 0){
+            
+            if(is_timeout()){           // 2-1) If timeout,
+                ready_queue_push(now);  // push running process to ready queue.
+                printk("\033[33m[WORKING] \033[0m Process: %s\n", name);
+                printk("\033[31m[Timeout] \033[0m");
+            }
+            
+            if (now.job == 0)              // 2-2) Process finish
+                printk("\033[32m[FINISH]  \033[0m Process: %s\n", name);
+
+            // Check whether the ready Q is empty
+            if(is_ready_queue_empty())
+                now.pid = IDLE;
+            else{
+                now = ready_queue_pop();    // Pop new ready process from ready queue.
+                start_timer();
+                timer++;
+            }
+            
+        }
+        else{
+                timer++;
+                printk("\033[33m[WORKING] \033[0m Process: %s\n", name);    // 2-3) working
+        }
         
-        return 0;
+        return 0;                   // Accepted
     }
 
-    // Case 3-1: Execute next process (timeout)
-    if(timer == 9){
-        now.job--;
-        timer = 0;
-        ready_queue_push(now);
-        printk("\033[33m[WORKING] \033[0m Process: %s\n", find_name(now.pid));
-        now = ready_queue_pop();
-
-        return 0;
-    }
+    // Case 3: current process != requested process
     else{
-        printk("\033[33m[WORKING] \033[0m Process: %s\n", find_name(now.pid));
+        if(is_process_new(new_job.pid)){
+            ready_queue_push(new_job);
+        }
 
-        return 0;
+        printk("\033[31m[DENIED]  \033[0m Process: %s\n", name);
+        return 1;   // Rejected
     }
-
-
-
 }
-*/
+
 
 int is_ready_queue_empty(){
     // If ready queue is empty
@@ -410,17 +418,18 @@ job_t shortest_process(){
     }
 }
 
-// char* find_name(pid_t _pid){
-//     int i = 0;
+int is_timeout(){
+    if(timer == 10){
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
 
-//     for(i=0; i<MAX; i++){
-//         if(_pid == name_dictionary[i].pid){
-//             break;
-//         }
-//     }
-//     return name_dictionary[i].name;
-// }
-
+void start_timer(){
+    timer = 0;
+}
 
 // for debugging
 void print_ready_queue(void){
