@@ -24,11 +24,9 @@ job_t new;
 int is_ready_queue_empty(void);
 pid_t ready_queue_pop_pid(void);
 job_t ready_queue_pop(void);
-pid_t ready_queue_pop_shortest(void);
 int is_process_new(pid_t);
 void ready_queue_push(job_t);
 void ready_queue_push_sort(job_t);
-job_t shortest_process(void);
 int is_timeout(void);
 void start_timer(void);
 
@@ -120,7 +118,7 @@ SYSCALL_DEFINE2(os2023_ku_cpu_sjf, char*, name, int, job){
             if(is_ready_queue_empty())
                 now.pid = IDLE;
             else
-                now = ready_queue_pop();       // Pop head(job_t type)
+                now = ready_queue_pop();       // Pop head(shortest job process)
         }
         else{
             printk("\033[33m[WORKING] \033[0m Process: %s\n", name);
@@ -228,9 +226,9 @@ SYSCALL_DEFINE2(os2023_ku_cpu_rr, char*, name, int, job){
     job_t new_job = {current->pid, job};
 
     //For debugging
-    printk("\n\nnow.pid: %d", now.pid);
-    printk("Timer: %d", timer);
-    print_ready_queue();
+    // printk("\n\nnow.pid: %d", now.pid);
+    // printk("Timer: %d", timer);
+    // print_ready_queue();
 
     // Case 1: CPU idle
     if(now.pid == IDLE){
@@ -243,11 +241,12 @@ SYSCALL_DEFINE2(os2023_ku_cpu_rr, char*, name, int, job){
     // Case 2: current process == requested process
     if(now.pid == new_job.pid){
         /*
-        1) Time slice over
-        2) running process finish
+        1) running process finish
+        2) time slice over
         3) working
         */
 
+        // 2-1) running process finish
         if(job == 0){
             printk("\033[32m[FINISH]  \033[0m Process: %s\n", name);
             
@@ -257,14 +256,15 @@ SYSCALL_DEFINE2(os2023_ku_cpu_rr, char*, name, int, job){
             }
             else{
                 now = ready_queue_pop();    // Pop new ready process from ready queue.
-                printk("[pop] now pid: %d job: %d \n", now.pid, now.job);   // For debugging
-                start_timer();
+                // printk("[pop] now pid: %d job: %d \n", now.pid, now.job);   // For debugging
+                start_timer();              // Set timer to 0
                 timer++;
 
             }
             return 0;
         }
 
+        // 2-2) time slice over
         if(is_timeout()){   
                 // 2-1) If timeout,
             ready_queue_push(new_job);  // push running process to ready queue.
@@ -277,7 +277,7 @@ SYSCALL_DEFINE2(os2023_ku_cpu_rr, char*, name, int, job){
             }
             else{
                 now = ready_queue_pop();    // Pop new ready process from ready queue.
-                printk("[pop] now pid: %d job: %d \n", now.pid, now.job);   // For debugging
+                // printk("[pop] now pid: %d job: %d \n", now.pid, now.job);   // For debugging
                 start_timer();
                 timer++;
 
@@ -285,9 +285,10 @@ SYSCALL_DEFINE2(os2023_ku_cpu_rr, char*, name, int, job){
             return 0;    
             
         }
+        // 2-3) working
         else{
             timer++;
-            printk("\033[33m[WORKING] \033[0m Process: %s\n", name);    // 2-3) working
+            printk("\033[33m[WORKING] \033[0m Process: %s\n", name);    
 
             return 0;                   // Accepted
         }
@@ -344,34 +345,6 @@ job_t ready_queue_pop(){
 }
 
 
-pid_t ready_queue_pop_shortest(){
-    // Return head of Q
-    int out;
-    int i;
-    int shortest_job;
-    int shortest_idx = head;
-    job_t tmp_queue;
-
-    shortest_job = queue[head].job;
-    for(i = head+1; i <= tail; i++){
-        if(shortest_job > queue[i].job){
-            shortest_idx =  i;
-        }
-    }
-
-    tmp_queue = queue[shortest_idx];
-    queue[shortest_idx] = queue[head];
-    queue[head] = tmp_queue;
-
-    out = head;
-    if(len != 1)
-        head += 1;
-
-    len--;
-    return queue[out].pid;
-}
-
-
 int is_process_new(pid_t new_process_pid){
     int i = 0;
 
@@ -423,20 +396,8 @@ void ready_queue_push_sort(job_t new_process){
     len++;
 }
 
-job_t shortest_process(){
-    if(now.job > queue[head].job){
-        new = ready_queue_pop();    // Pop shortest process
-        ready_queue_push(now);      // Push working process
-
-        return new;
-    }
-    else{
-        return now;
-    }
-}
-
 int is_timeout(){
-    if(timer == 10){
+    if(timer == 25){                // Time Slice: 25
         return 1;
     }
     else{
