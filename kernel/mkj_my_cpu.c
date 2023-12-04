@@ -248,34 +248,50 @@ SYSCALL_DEFINE2(os2023_ku_cpu_rr, char*, name, int, job){
         3) working
         */
 
-        if(is_timeout() || now.job == 0){
+        if(job == 0){
+            printk("\033[32m[FINISH]  \033[0m Process: %s\n", name);
             
-            if(is_timeout()){           // 2-1) If timeout,
-                ready_queue_push(new_job);  // push running process to ready queue.
-                printk("\033[33m[WORKING] \033[0m Process: %s\n", name);
-                printk("\033[31m[Timeout] \033[0m");
-            }
-            
-            if (now.job == 0)              // 2-2) Process finish
-                printk("\033[32m[FINISH]  \033[0m Process: %s\n", name);
-
             // Check whether the ready Q is empty
-            if(is_ready_queue_empty())
+            if(is_ready_queue_empty()){
                 now.pid = IDLE;
+            }
             else{
                 now = ready_queue_pop();    // Pop new ready process from ready queue.
                 printk("[pop] now pid: %d job: %d \n", now.pid, now.job);   // For debugging
                 start_timer();
                 timer++;
+
             }
+            return 0;
+        }
+
+        if(is_timeout()){   
+                // 2-1) If timeout,
+            ready_queue_push(new_job);  // push running process to ready queue.
+            printk("\033[33m[WORKING] \033[0m Process: %s\n", name);
+            printk("\033[31m[Timeout] \033[0m");
+
+            // Check whether the ready Q is empty
+            if(is_ready_queue_empty()){
+                now.pid = IDLE;
+            }
+            else{
+                now = ready_queue_pop();    // Pop new ready process from ready queue.
+                printk("[pop] now pid: %d job: %d \n", now.pid, now.job);   // For debugging
+                start_timer();
+                timer++;
+
+            }
+            return 0;    
             
         }
         else{
-                timer++;
-                printk("\033[33m[WORKING] \033[0m Process: %s\n", name);    // 2-3) working
+            timer++;
+            printk("\033[33m[WORKING] \033[0m Process: %s\n", name);    // 2-3) working
+
+            return 0;                   // Accepted
         }
         
-        return 0;                   // Accepted
     }
 
     // Case 3: current process != requested process
