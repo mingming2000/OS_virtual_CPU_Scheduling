@@ -251,7 +251,7 @@ SYSCALL_DEFINE2(os2023_ku_cpu_rr, char*, name, int, job){
         if(is_timeout() || now.job == 0){
             
             if(is_timeout()){           // 2-1) If timeout,
-                ready_queue_push(now);  // push running process to ready queue.
+                ready_queue_push(new_job);  // push running process to ready queue.
                 printk("\033[33m[WORKING] \033[0m Process: %s\n", name);
                 printk("\033[31m[Timeout] \033[0m");
             }
@@ -264,6 +264,7 @@ SYSCALL_DEFINE2(os2023_ku_cpu_rr, char*, name, int, job){
                 now.pid = IDLE;
             else{
                 now = ready_queue_pop();    // Pop new ready process from ready queue.
+                printk("[pop] now pid: %d job: %d \n", now.pid, now.job);   // For debugging
                 start_timer();
                 timer++;
             }
